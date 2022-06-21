@@ -1,11 +1,8 @@
+import config
+import sqlite3
 import math as m
 from telegram.ext import *
 from geopy.geocoders import Nominatim
-
-
-with open("token.txt", "r", ) as f:
-    TOKEN = f.read()
-    print("Il tuo token è: ", TOKEN)
 
 
 def get_loc(street: str) -> str:
@@ -63,7 +60,21 @@ def error(update, context):
 
 
 def main():
-    updater = Updater(TOKEN, use_context=True)
+    db = sqlite3.connect("../db/wether.db")
+    try:
+        cursor = db.cursor()
+        querry = """SELECT stazioni.IDSTAZ, dump_dati_stazioni_VR.IDStazione, stazioni.NOME, stazioni.X , stazioni.Y 
+                    FROM stazioni, dump_dati_stazioni_VR
+                    WHERE stazioni.IDSTAZ = dump_dati_stazioni_VR.IDStazione
+                    GROUP by stazioni.IDSTAZ
+                    """
+        cursor.execute(querry)
+        record = cursor.fetchall()
+        print(record)
+    except sqlite3.Error as sqlerror:
+        print("Error while connecting to sqlite", sqlerror)
+
+    updater = Updater(config.KEY, use_context=True)
     dp = updater.dispatcher
 
     dp.add_handler(CommandHandler("start", start))
@@ -75,6 +86,8 @@ def main():
 
     updater.start_polling()
     updater.idle()
+    if db:
+        db.close()
 
 
 if __name__ == "__main__":
