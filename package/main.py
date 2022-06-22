@@ -26,7 +26,7 @@ def dist(lat1, lon1, lat2, lon2) -> float:
         lon2 (float): longitude of second pos
 
     Returns:
-        float: Distace in ? 
+        float: Distace in ?
     """
     num1 = m.sin((m.radians(lat2) - m.radians(lat1)) / 2)
     num2 = m.sin((m.radians(lon2) - m.radians(lon1)) / 2)
@@ -50,11 +50,6 @@ def help(update, context):
     """)
 
 
-def reply(update, context):
-    user_input = update.message.text
-    update.message.reply_text(user_input)
-
-
 def error(update, context):
     print(f"Update {update} caused error {context.error}")
 
@@ -63,10 +58,7 @@ def main():
     db = sqlite3.connect("../db/wether.db")
     try:
         cursor = db.cursor()
-        querry = """SELECT stazioni.IDSTAZ, dump_dati_stazioni_VR.IDStazione, stazioni.NOME, stazioni.X , stazioni.Y 
-                    FROM stazioni, dump_dati_stazioni_VR
-                    WHERE stazioni.IDSTAZ = dump_dati_stazioni_VR.IDStazione
-                    GROUP by stazioni.IDSTAZ
+        querry = """Create querry for IDSTAZ
                     """
         cursor.execute(querry)
         record = cursor.fetchall()
@@ -80,7 +72,6 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("close", cloasest))
-    dp.add_handler(MessageHandler(Filters.text, reply))
 
     dp.add_error_handler(error)
 
