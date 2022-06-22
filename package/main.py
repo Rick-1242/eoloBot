@@ -8,12 +8,14 @@ from geopy.geocoders import Nominatim
 def get_loc(street: str) -> str:
     geolocator = Nominatim(user_agent="TelegramWindBot")
     location = geolocator.geocode(street)
-    return location.address
+    return location.longitude, location.latitude
 
 
-def cloasest(update, context):  # TODO Make the bot take the adress as INPUT
+def cloasest(update, context):  # TODO Make the bot take the adress as INPUT, find the coasest thing
     street = "Via Salvo d'acquisto,1 37122 Verona"
-    update.message.reply_text(get_loc(street))
+    print(context.args)
+    coords = get_loc(street)
+    update.message.reply_text(f"{coords[0]}, {coords[1]}")
 
 
 def dist(lat1, lon1, lat2, lon2) -> float:
@@ -43,7 +45,6 @@ def help(update, context):
     update.message.reply_text("""
     Sono disponibili i seguenti comandi:
 
-
     /start --> Messaggio di benvenuto
     /help --> Questo messaggio
     /close --> la stazione piu vicina(attualmente solo il return del input)
@@ -58,11 +59,9 @@ def main():
     db = sqlite3.connect("../db/wether.db")
     try:
         cursor = db.cursor()
-        querry = """Create querry for IDSTAZ
-                    """
+        querry = """SELECT IDSTAZ, Latitude, Longitude FROM CoordinateStazioni"""
         cursor.execute(querry)
-        record = cursor.fetchall()
-        print(record)
+        allStaz = cursor.fetchall()
     except sqlite3.Error as sqlerror:
         print("Error while connecting to sqlite", sqlerror)
 
