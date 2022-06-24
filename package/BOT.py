@@ -12,6 +12,7 @@ with open("token.txt", "r", ) as f:
 iscloseStazClicked = False
 Mappa = "Mappa del 💨"
 closeStaz = "Stazione 💨 piu vicina"
+Indietro = "Indietro"
 db = sqlite3.connect("wether.db")
 
 def start(update: Update, context: CallbackContext):
@@ -45,17 +46,28 @@ def handle_message(update: Update, context: CallbackContext):
     global Mappa
     global closeStaz
     global db
-    
+
     if iscloseStazClicked:
-        cloasest(db, update, context)
-        iscloseStazClicked = False
+        if Indietro in update.message.text:
+            iscloseStazClicked = False
+            buttons = [[KeyboardButton(Mappa)], [(KeyboardButton(closeStaz))]]
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Usa i comandi per scegliere un'azione",
+                reply_markup=ReplyKeyboardMarkup(buttons))
+        elif Mappa in update.message.text or closeStaz in update.message.text:
+                update.message.reply_text("Comando non valido. Please inserire un indirizzo")
+        else:
+            cloasest(db, update, context)
+            iscloseStazClicked = False
     else:
-        if Mappa in update.message.text:
+        if Mappa in update.message.text:        
             buttons = [[InlineKeyboardButton("Link per la mappa delle stazioni meteo", url = "http://u.osmfr.org/m/780280/")]]
             context.bot.send_message(chat_id=update.effective_chat.id, text = "Hai richiesto la mappa delle stazioni meteo", reply_markup= InlineKeyboardMarkup(buttons))
         elif closeStaz in update.message.text:
             iscloseStazClicked = True
-            update.message.reply_text("Inserire un indirizzo.")
+            buttons = [[KeyboardButton(Mappa)], [(KeyboardButton(closeStaz))], [(KeyboardButton(Indietro))]]
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Inserire un indirizzo",
+            reply_markup=ReplyKeyboardMarkup(buttons))
+
 """
         else:
             update.message.reply_text("Comando non valido")
