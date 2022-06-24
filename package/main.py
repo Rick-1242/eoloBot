@@ -1,101 +1,87 @@
-import config
 import sqlite3
 import math as m
+import functions
 from telegram import *
 from telegram.ext import *
 from geopy.geocoders import Nominatim
+from requests import *
 
 
-def start(update: Update, context: CallbackContext):
-    buttons = [[KeyboardButton(Mappa)], [(KeyboardButton(closeStaz))]]
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Benvenuto nel WindBot",
-                             reply_markup=ReplyKeyboardMarkup(buttons))
+def cloasest(update: Update, context: CallbackContext) -> bool:
+    satisfied = False
 
-
-def get_loc(street: str) -> str:
+    #! se non si inserisce una via ma qualsiasi altro messaggio non funziona(TODO check user input)
+    street = update.message.text + " Vr"
     geolocator = Nominatim(user_agent="TelegramWindBot")
     location = geolocator.geocode(street)
-    return location.longitude, location.latitude
+    distance = []
+    for staz in context.bot_data["stazCoords"]:
+        calcDist = functions.dist(float(location.latitude),
+                                  float(location.longitude),
+                                  float(staz[2]), float(staz[1]))
+        distance.append([staz[0], calcDist])
+    sorteDistance = functions.Sort(distance)
+    msg = f"La posrizione è {location.address}\n"
+    msg += f"La stazione più vicina è ID{sorteDistance[0][0]}"
+    msg += f" e si trova a {round(sorteDistance[0][1], 3)}Km dalla posizione"
+    update.message.reply_text(msg)
+
+    # buttons = [[KeyboardButton("✔️")], [(KeyboardButton("❌"))]]
+    # context.bot.send_message(chat_id=update.effective_chat.id, text="É coretta?",
+    #                          reply_markup=ReplyKeyboardMarkup(buttons))
+    # if "✔️" in update.message.text:
+    #     satisfied = True
+    return satisfied
 
 
-def dist(lat1, lon1, lat2, lon2) -> float:
-    """Calcutaes the distance between two coords
-
-    Args:
-        lat1 (float): latitude of first pos
-        lon1 (float): longitude of first pos
-        lat2 (float): latitude of second pos
-        lon2 (float): longitude of second pos
-
-    Returns:
-        float: Distace between the two coords
-    """
-    num1 = m.sin((m.radians(lat2) - m.radians(lat1)) / 2)
-    num2 = m.sin((m.radians(lon2) - m.radians(lon1)) / 2)
-    return 6371 * 2 * m.asin(m.sqrt(m.pow(num1, 2) + m.cos(lat1) * m.cos(lat2) * m.pow(num2, 2)))
-
-
-# TODO Make the bot take the adress as INPUT, find the coasest thing
-def cloasest(db, update: Update, context: CallbackContext):
-    # try:
-    #     cursor = db.cursor()
-    #     querry = """SELECT IDSTAZ, Latitude, Longitude FROM CoordinateStazioni"""
-    #     cursor.execute(querry)
-    #     allStaz = cursor.fetchall()
-    # except sqlite3.Error as sqlerror:
-    #     print("Error while connecting to sqlite", sqlerror)
-
-    street = update.message.text
-    update.message.reply_text(street)
-    coords = get_loc(street)
-    update.message.reply_text(f"{coords[0]}, {coords[1]}")
-
-def handle_message(iscloseStazClicked: bool, Mappa: str, closeStaz: str, db, update: Update, context: CallbackContext):
-    if iscloseStazClicked:
-        cloasest(db, update, context)
-        iscloseStazClicked = False
+def handle_message(update: Update, context: CallbackContext):
+    if context.bot_data["iscloseStazClicked"]:
+        satisfied = cloasest(update, context)
+        # TODO Make this work(if first inpunt is wrong offer second input)
+        if satisfied:
+            context.bot_data["iscloseStazClicked"] = False
     else:
-        if Mappa in update.message.text:
-            update.message.reply_text("Coming soon")
-        elif closeStaz in update.message.text:
-            iscloseStazClicked = True
-            update.message.reply_text(
-                "Con questo comando puoi calcolare l'energia che avrebbe prodotto un'elica. Inserire un indirizzo.")
-        else:
-            update.message.reply_text("Comando non valido")
-
-
-def help(update: Update, context: CallbackContext):
-    update.message.reply_text("""
-    Sono disponibili i seguenti comandi:
-
-    /start --> Per avviare il bot
-    """)
-
-
-def error(update: Update, context: CallbackContext):
-    print(f"Update {update} caused error {context.error}")
+        if context.bot_data["Mappa"] in update.message.text:
+            buttons = [[InlineKeyboardButton(
+                "Link per la mappa delle stazioni meteo", url="http://u.osmfr.org/m/780280/")]]
+            context.bot.send_message(chat_id=update.effective_chat.id,
+                                     text="Hai richiesto la mappa delle stazioni meteo", reply_markup=InlineKeyboardMarkup(buttons))
+        elif context.bot_data["closeStaz"] in update.message.text:
+            context.bot_data["iscloseStazClicked"] = True
+            update.message.reply_text("Inserire un indirizzo.")
+        # else:
+        #     update.message.reply_text("Comando non valido")
 
 
 def main():
-    iscloseStazClicked = False
-    Mappa = "Mappa del 💨"
-    closeStaz = "Stazione 💨 piu vicina"
+    with open("token.txt", "r", ) as f:
+        TOKEN = f.read()
+        print("Il tuo token è: ", TOKEN)
 
     db = sqlite3.connect("../db/wether.db")
-
-    updater = Updater(config.KEY, use_context=True)
+    updater = Updater(TOKEN, use_context=True)
     disp = updater.dispatcher
+    disp.bot_data = {"Mappa": "Mappa del 💨",
+                     "closeStaz": "Stazione 💨 piu vicina",
+                     "iscloseStazClicked": False}
 
-    disp.add_handler(CommandHandler("start", start))
-    disp.add_handler(CommandHandler("help", help))
-    disp.add_handler(MessageHandler(
-        Filters.text, handle_message(iscloseStazClicked, Mappa, closeStaz, db, update, callbackContext)))
+    try:
+        cursor = db.cursor()
+        querry = """SELECT IDSTAZ, Longitude, Latitude FROM CoordinateStazioni"""
+        cursor.execute(querry)
+        stazCoords = cursor.fetchall()
+        disp.bot_data["stazCoords"] = stazCoords
+    except sqlite3.Error as sqlerror:
+        print("Error while connecting to sqlite", sqlerror)
 
-    disp.add_error_handler(error)
+    disp.add_handler(CommandHandler("start", functions.start))
+    disp.add_handler(CommandHandler("help", functions.help))
+    disp.add_handler(MessageHandler(Filters.text, handle_message))
+    disp.add_error_handler(functions.error)
 
     updater.start_polling()
     updater.idle()
+
     if db:
         db.close()
 
