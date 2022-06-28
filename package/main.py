@@ -50,6 +50,8 @@ def handle_message(update: Update, context: CallbackContext):
             buttons = [[KeyboardButton("Mappa")], [(KeyboardButton(context.bot_data["closeStaz"]))]]
             context.bot.send_message(chat_id=update.effective_chat.id, text="Usa i comandi per scegliere un'azione",
                 reply_markup=ReplyKeyboardMarkup(buttons))
+        elif ("Mappa" in update.message.text) or (context.bot_data["closeStaz"] in update.message.text):
+            update.message.reply_text("Comando non valido. Utilizzare il tasto indietro per tornare allo start")
         else:
             cloasest(update, context)
         # TODO Make this work(if first inpunt is wrong offer second input)   
