@@ -11,6 +11,7 @@ Indietro = "Indietro"
 def cloasest(update: Update, context: CallbackContext) -> bool:
 
     #! se non si inserisce una via ma qualsiasi altro messaggio non funziona(TODO check user input)
+    #Ora se l'utente clicca un pulsante durante l'inserimento il bot lo corregge ma se inserisce un input a caso si blocca ancora
 
     street = update.message.text + " Vr"
     geolocator = Nominatim(user_agent="TelegramWindBot")
