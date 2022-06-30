@@ -15,8 +15,8 @@ def help(update: Update, context: CallbackContext):
     update.message.reply_text("""
     Sono disponibili i seguenti comandi:
         /start -> Messaggio di benvenuto
-        /help -> aiuto.
-        /close -> data una via ritorna la centralina più vicina
+        /help -> Visualizza questo messaggio.
+        /close -> Inserire questo comando e una via per ricevere la centralina più vicina.
         /mappa -> link per la mappa di tutte le centraline 
         /quiz -> link per il quiz sul vento
     """)
