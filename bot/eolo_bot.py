@@ -33,11 +33,11 @@ def closest(update: Update, context : CallbackContext, street: str) -> bool:
       msg += f"\nLa temperatura minima registata dalla stazione nell'ultimo anno è stata {sorteDistance[0][5]} °C."
     else :
       msg += f"\n-----------------------------------------------------------------------------------------------------"
-      msg += f"\nLa temperatura media non disponibile"
+      msg += f"\nTemperatura media non disponibile"
       msg += f"\n-----------------------------------------------------------------------------------------------------"
-      msg += f"\nLa temperatura massima non disponibile"
+      msg += f"\nTemperatura massima non disponibile"
       msg += f"\n-----------------------------------------------------------------------------------------------------"
-      msg += f"\nLa temperatura minima non disponibile"
+      msg += f"\nTemperatura minima non disponibile"
     update.effective_message.reply_text(msg)
     restart_menu(update, context)
 
@@ -120,7 +120,7 @@ def main():
 
     try:
         cursor = db.cursor()
-        querry = """SELECT IDSTAZ, Longitude, Latitude, Media_V, Media_T, Max_T, Min_T FROM fin"""
+        querry = """SELECT IDSTAZ, Longitude, Latitude, Media_V, Media_T, Max_T, Min_T FROM db"""
         cursor.execute(querry)
         stazCoords = cursor.fetchall()
         disp.bot_data["stazCoords"] = stazCoords
